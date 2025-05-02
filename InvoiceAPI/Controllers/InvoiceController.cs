@@ -1,5 +1,5 @@
-﻿using InvoiceAPI.Exceptions;
-using InvoiceAPI.Interfaces;
+﻿using InvoiceAPI.Interfaces;
+using InvoiceAPI.Models.Common;
 using InvoiceAPI.Models.Invoice;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,11 +17,15 @@ namespace InvoiceAPI.Controllers
         }
 
         /// <summary>
-        /// 發票開立
+        /// 發票開立:
+        /// 1. 會員綁定(若已綁定略過)
+        /// 2. 發票若已開立直接回傳發票號碼
+        /// 3. 開立發票並回傳發票號碼
         /// </summary>
-        /// <param name="req"></param>
+        /// <param name="req">開立發票資料</param>
         /// <returns>發票號碼</returns>
         [HttpPost]
+        [ProducesResponseType(typeof(CommonAPIModel<IssueRes>), StatusCodes.Status200OK)]
         public async Task<IActionResult> Issue(IssueReq req)
         {
             var invoiceNumber = await _invoiceService.IssueAsync(req);
