@@ -164,6 +164,11 @@ public partial class WelldoneContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_invoice_record_invoice_operation_type");
 
+            entity.HasOne(d => d.system_code).WithMany(p => p.invoice_record)
+                .HasForeignKey(d => d.system_code_id)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_invoice_record_invoice_system_code");
+
             entity.HasOne(d => d.user_serial_map).WithMany(p => p.invoice_record)
                 .HasForeignKey(d => d.user_serial_map_id)
                 .OnDelete(DeleteBehavior.ClientSetNull)

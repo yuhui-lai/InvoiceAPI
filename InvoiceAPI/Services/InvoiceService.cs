@@ -33,16 +33,31 @@ namespace InvoiceAPI.Services
             // 驗證輸入參數
             ValidateIssueRequest(req);
             // 驗證系統代碼
-            var systemCode = await GetSystemCodeRecordAsync(req.system_code);
+            var systemCodeRecord = await GetSystemCodeRecordAsync(req.system_code);
             // 驗證使用者ID已綁定
-            var userMap = await GetOrBindingUserMapAsync(systemCode, req.user_id);
+            var userMapping = await GetOrBindingUserMapAsync(systemCodeRecord, req.user_id);
+            // 驗證訂單編號與發票是否已存在
+            string existInvoiceNumber = await GetExistInvoiceNumberAsync(systemCodeRecord.id, req.order_no);
+            if (!string.IsNullOrEmpty(existInvoiceNumber))
+            {
+                return new CommonAPIModel<IssueRes>
+                {
+                    success = true,
+                    msg = "發票已存在",
+                    data = new IssueRes
+                    {
+                        invoice_number = existInvoiceNumber
+                    }
+                };
+            }
+
             // 取得發票會員編號
-            var userCarrierId = GetInvoiceCarrierId(systemCode.system_code, userMap.serial_no);
+            var userCarrierId = GetInvoiceCarrierId(systemCodeRecord.system_code, userMapping.serial_no);
             // 準備發票資料
-            var invoice = GetNewInvoiceRecord(req, userMap.id, userCarrierId);
+            var invoice = GetNewInvoiceRecord(req, userMapping.id, userCarrierId, systemCodeRecord.id);
             var invoiceProducts = GetNewInvoiceProductRecord(req);
             // 取得或開立發票號碼
-            var invoiceNumber = await IssueInvoiceAndGetNumberAsync(systemCode.id, invoice, invoiceProducts);
+            var invoiceNumber = await IssueInvoiceAndGetNumberAsync(systemCodeRecord.id, invoice, invoiceProducts);
 
             return new CommonAPIModel<IssueRes>
             {
@@ -53,6 +68,23 @@ namespace InvoiceAPI.Services
                     invoice_number = invoiceNumber
                 }
             };
+        }
+
+        /// <summary>
+        /// 取得已存在的發票號碼
+        /// </summary>
+        /// <param name="systemCodeRecord"></param>
+        /// <param name="orderId"></param>
+        /// <returns></returns>
+        private async Task<string> GetExistInvoiceNumberAsync(int systemCodeId, string orderId)
+        {
+            // 同系統代碼下的訂單編號
+            var existInvoice = await dbContext.invoice_record
+                .Where(x => x.order_no.Equals(orderId) && x.system_code_id == systemCodeId)
+                .FirstOrDefaultAsync();
+            if (existInvoice == null)
+                return string.Empty;
+            return existInvoice.invoice_number;
         }
 
         /// <summary>
@@ -129,11 +161,11 @@ namespace InvoiceAPI.Services
         /// <summary>
         /// 綁定使用者並取得會員綁定記錄，樂觀鎖
         /// </summary>
-        /// <param name="systemCode"></param>
+        /// <param name="systemCodeRecord"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
         /// <exception cref="BusinessException"></exception>
-        private async Task<invoice_system_user_serial_map> UserBindingAsync(invoice_system_code systemCode, string userId)
+        private async Task<invoice_system_user_serial_map> UserBindingAsync(invoice_system_code systemCodeRecord, string userId)
         {
             const int maxRetries = 3;
             const int delayMs = 100;
@@ -143,9 +175,9 @@ namespace InvoiceAPI.Services
                 try
                 {
                     // 取得並更新流水號
-                    var serialNo = GenerateSerialNo(systemCode);
+                    var serialNo = await GenerateSerialNoAsync(systemCodeRecord);
                     // 建立並儲存綁定記錄
-                    var mapping = await CreateUserBinding(systemCode.id, userId, serialNo);
+                    var mapping = await CreateUserBindingAsync(systemCodeRecord.id, userId, serialNo);
                     // 統一提交變更
                     await dbContext.SaveChangesAsync();
                     // 提交交易
@@ -260,7 +292,7 @@ namespace InvoiceAPI.Services
         /// <param name="userMapId"></param>
         /// <param name="userCarrierId"></param>
         /// <returns></returns>
-        private invoice_record GetNewInvoiceRecord(IssueReq req, int userMapId, string userCarrierId)
+        private invoice_record GetNewInvoiceRecord(IssueReq req, int userMapId, string userCarrierId, int systeCodeId)
         {
             // 取得新的發票記錄
             return new invoice_record
@@ -289,7 +321,8 @@ namespace InvoiceAPI.Services
                 update_date = TimeUtil.UnifiedNow(),
                 carrier_type = config["Invoice:CarrierType"],
                 user_serial_map_id = userMapId, // 需設定有效的 user_serial_map ID
-                carrier_id_1 = userCarrierId
+                carrier_id_1 = userCarrierId,
+                system_code_id = systeCodeId
             };
         }
 
@@ -312,10 +345,10 @@ namespace InvoiceAPI.Services
         /// <returns></returns>
         private async Task<invoice_system_user_serial_map> GetOrBindingUserMapAsync(invoice_system_code systemCodeRecord, string userId)
         {
-            var existingBinding = systemCodeRecord
+            var existingBinding = await dbContext
                 .invoice_system_user_serial_map
-                .Where(x => x.user_id == userId)
-                .FirstOrDefault();
+                .Where(x => x.user_id == userId && x.system_code_id == systemCodeRecord.id)
+                .FirstOrDefaultAsync();
             if (existingBinding == null)
             {
                 // 未綁定進行綁定
@@ -333,8 +366,6 @@ namespace InvoiceAPI.Services
         private async Task<invoice_system_code> GetSystemCodeRecordAsync(string systemCode)
         {
             var record = await dbContext.invoice_system_code
-                .Include(s => s.invoice_system_user_serial_map)
-                .Include(s => s.invoice_system_user_max_serial)
                 .FirstOrDefaultAsync(x => x.system_code == systemCode);
 
             if (record == null)
@@ -350,10 +381,12 @@ namespace InvoiceAPI.Services
         /// <param name="systemCodeRecord"></param>
         /// <returns></returns>
         /// <exception cref="BusinessException"></exception>
-        private int GenerateSerialNo(invoice_system_code systemCodeRecord)
+        private async Task<int> GenerateSerialNoAsync(invoice_system_code systemCodeRecord)
         {
             // 檢查是否需要初始化流水號
-            var maxSerial = systemCodeRecord.invoice_system_user_max_serial.FirstOrDefault();
+            var maxSerial = await dbContext.invoice_system_user_max_serial
+                .Where(x => x.system_code_id==systemCodeRecord.id)
+                .FirstOrDefaultAsync();
 
             if (maxSerial == null)
             {
@@ -371,7 +404,7 @@ namespace InvoiceAPI.Services
         /// <param name="userId"></param>
         /// <param name="serialNo"></param>
         /// <returns></returns>
-        private async Task<invoice_system_user_serial_map> CreateUserBinding(int systemCodeId, string userId, int serialNo)
+        private async Task<invoice_system_user_serial_map> CreateUserBindingAsync(int systemCodeId, string userId, int serialNo)
         {
             var mapping = new invoice_system_user_serial_map
             {

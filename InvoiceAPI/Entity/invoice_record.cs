@@ -59,9 +59,13 @@ public partial class invoice_record
 
     public string carrier_id_1 { get; set; }
 
+    public int system_code_id { get; set; }
+
     public virtual ICollection<invoice_product_record> invoice_product_record { get; set; } = new List<invoice_product_record>();
 
     public virtual invoice_operation_type operation_type { get; set; }
+
+    public virtual invoice_system_code system_code { get; set; }
 
     public virtual invoice_system_user_serial_map user_serial_map { get; set; }
 }

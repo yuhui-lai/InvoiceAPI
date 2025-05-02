@@ -23,6 +23,8 @@ public partial class invoice_system_code
 
     public virtual ICollection<invoice_number_management> invoice_number_management { get; set; } = new List<invoice_number_management>();
 
+    public virtual ICollection<invoice_record> invoice_record { get; set; } = new List<invoice_record>();
+
     public virtual ICollection<invoice_system_user_max_serial> invoice_system_user_max_serial { get; set; } = new List<invoice_system_user_max_serial>();
 
     public virtual ICollection<invoice_system_user_serial_map> invoice_system_user_serial_map { get; set; } = new List<invoice_system_user_serial_map>();
