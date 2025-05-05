@@ -1,6 +1,6 @@
-﻿using InvoiceAPI.Interfaces;
-using InvoiceAPI.Models.Common;
-using InvoiceAPI.Models.Invoice;
+﻿using InvoiceAPI.Lib.Interfaces;
+using InvoiceAPI.Lib.Models.Common;
+using InvoiceAPI.Lib.Models.Invoice;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InvoiceAPI.Controllers
