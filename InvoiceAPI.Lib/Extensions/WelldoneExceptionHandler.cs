@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Text.Json;
 
 namespace InvoiceAPI.Lib.Extensions
@@ -34,16 +33,14 @@ namespace InvoiceAPI.Lib.Extensions
                     var logger = loggerFactory.CreateLogger("WelldoneExceptionHandler");
                     // 使用 LogContext 設置 action 屬性，寫入資料庫的 action 欄位
                     // 建立一個包含 action 屬性的 Logger Scope
-                    using (logger.BeginScope(new Dictionary<string, object> { 
+                    using (logger.BeginScope(new Dictionary<string, object>
+                    {
                         ["action"] = action,
                         ["session"] = Guid.NewGuid().ToString()
                     }))
                     {
                         logger.LogError(exception, errorDetails);
                     }
-
-                    // 記錄異常到資料庫
-                    //await LogExceptionToDatabase(context, exceptionFeature.Error, logger, scope.ServiceProvider);
 
                     // 根據請求類型處理回應
                     await HandleApiResponse(context, exceptionFeature.Error);

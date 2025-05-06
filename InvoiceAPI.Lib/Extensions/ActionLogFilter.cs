@@ -15,14 +15,14 @@ namespace InvoiceAPI.Lib.Extensions
         {
             this.logger = logger;
             this.jsonOptions=jsonOptions;
+            // 使用 Guid.NewGuid().ToString() 生成唯一的 session ID，辨識request
             guid = Guid.NewGuid().ToString();
         }
 
+        // Action 執行之前被呼叫
         public void OnActionExecuting(ActionExecutingContext context)
         {
-
-            var request = context.HttpContext.Request;
-            var action = request.Path; // 使用請求路徑作為 action
+            var action = context.HttpContext.Request.Path; // 使用請求路徑作為 action
             var reqBody = JsonSerializer.Serialize(context.ActionArguments.Values, jsonOptions);
             using (logger.BeginScope(new Dictionary<string, object>
             {
@@ -35,10 +35,10 @@ namespace InvoiceAPI.Lib.Extensions
             }
         }
 
+        // Action 執行之後被呼叫
         public void OnActionExecuted(ActionExecutedContext context)
         {
-            var request = context.HttpContext.Request;
-            var action = request.Path; // 使用請求路徑作為 action
+            var action = context.HttpContext.Request.Path; // 使用請求路徑作為 action
             if (context.Result is ObjectResult res)
             {
                 var resBody = JsonSerializer.Serialize(res.Value, jsonOptions);

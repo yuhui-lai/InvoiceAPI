@@ -37,6 +37,23 @@ namespace InvoiceAPI.Lib.Services
         /// <returns></returns>
         public async Task<CommonAPIModel<IssueRes>> IssueAsync(IssueReq req)
         {
+            try
+            {
+                return await IssueProcessAsync(req);
+            }
+            catch (BusinessException ex)
+            {
+                return new CommonAPIModel<IssueRes>
+                {
+                    success = false,
+                    msg = ex.Message,
+                    data = null
+                };
+            }
+        }
+
+        private async Task<CommonAPIModel<IssueRes>> IssueProcessAsync(IssueReq req)
+        {
             // 驗證輸入參數
             ValidateIssueRequest(req);
             // 驗證系統代碼
@@ -153,7 +170,7 @@ namespace InvoiceAPI.Lib.Services
                     }
                     await Task.Delay(delayMs + new Random().Next(0, 300));
                 }
-                catch (BusinessException ex)
+                catch (BusinessException)
                 {
                     await transaction.RollbackAsync();
                     // 業務異常不應重試
