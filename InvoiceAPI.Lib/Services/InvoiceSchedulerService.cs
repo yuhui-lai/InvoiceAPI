@@ -12,6 +12,7 @@ namespace InvoiceAPI.Lib.Services
     {
         private readonly WelldoneContext dbContext;
         private readonly IConfiguration config;
+        private string errorContent = "";
 
         private readonly string c0401GeinvNamespaceUri = "urn:GEINV:eInvoiceMessage:C0401:3.2";
         private readonly string c0401XmlSchemaInstanceNamespaceUri = "http://www.w3.org/2001/XMLSchema-instance";
@@ -22,6 +23,7 @@ namespace InvoiceAPI.Lib.Services
         {
             this.dbContext = dbContext;
             this.config = config;
+            errorContent = "";
         }
 
         /// <summary>
@@ -38,6 +40,37 @@ namespace InvoiceAPI.Lib.Services
             List<invoice_record> successCreateRecords = await CreateC0401XmlProcess(pendingInvoices, targetDirectory);
             // 更新成功處理的發票記錄的發送狀態
             await UpdateSendStatus(successCreateRecords);
+            // 記錄錯誤內容
+            await WriteErrorLogToFile();
+        }
+
+        /// <summary>
+        /// 將錯誤內容寫入檔案
+        /// </summary>
+        /// <param name="baseDirectory">基礎目錄，用於決定錯誤日誌儲存位置</param>
+        /// <returns></returns>
+        private async Task WriteErrorLogToFile()
+        {
+            if (!string.IsNullOrWhiteSpace(errorContent))
+            {
+                if(!Directory.Exists(config["LogFolder"]))
+                {
+                    Directory.CreateDirectory(config["LogFolder"]);
+                }
+
+                // 設定錯誤日誌檔案名稱，可以包含日期和時間以作區分
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string errorLogFileName = $"ErrorLog_{timestamp}.txt";
+                string errorLogFilePath = Path.Combine(config["LogFolder"], errorLogFileName);
+
+                // 非同步寫入錯誤內容到檔案
+                await File.WriteAllTextAsync(errorLogFilePath, errorContent);
+                Console.WriteLine($"錯誤日誌已寫入: {errorLogFilePath}");
+            }
+            else
+            {
+                Console.WriteLine("本次執行沒有錯誤內容需要記錄。");
+            }
         }
 
         /// <summary>
@@ -62,8 +95,10 @@ namespace InvoiceAPI.Lib.Services
                 }
                 catch (Exception ex)
                 {
+                    string errro = $"產生發票失敗: {record.invoice_number} order_no: {record.order_no} {ex.Message} {ex.StackTrace}\n\n";
                     // 記錄錯誤
-                    Console.WriteLine($"產生發票失敗: {record.invoice_number}: {ex.Message}");
+                    Console.WriteLine(errro);
+                    errorContent += $"{errro}";
                 }
             }
             return successCreateRecords;
@@ -92,17 +127,23 @@ namespace InvoiceAPI.Lib.Services
                 catch (DbUpdateException dbEx)
                 {
                     // 記錄資料庫更新錯誤
-                    Console.WriteLine($"更新發票狀態時資料庫發生錯誤: {dbEx.Message}");
+                    string error = $"更新發票狀態時資料庫發生錯誤: {dbEx.Message} {dbEx.StackTrace}\n\n";
+                    Console.WriteLine(error);
+                    errorContent += error;
                 }
                 catch (Exception ex)
                 {
                     // 記錄其他可能的儲存錯誤
-                    Console.WriteLine($"儲存發票狀態變更時發生未預期錯誤: {ex.Message}");
+                    string error = $"儲存發票狀態變更時發生未預期錯誤: {ex.Message} {ex.StackTrace}\n\n";
+                    Console.WriteLine(error);
+                    errorContent += error;
                 }
             }
             else
             {
-                Console.WriteLine("沒有成功產生 XML 的發票記錄可供更新狀態。");
+                string error = "沒有成功產生 XML 的發票記錄可供更新狀態。\n\n";
+                Console.WriteLine(error);
+                errorContent += error;
             }
         }
 
