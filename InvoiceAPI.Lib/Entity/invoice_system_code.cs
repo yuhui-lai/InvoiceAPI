@@ -21,6 +21,8 @@ public partial class invoice_system_code
 
     public string seller_telephone_number { get; set; }
 
+    public string carrier_type { get; set; }
+
     public virtual ICollection<invoice_number_management> invoice_number_management { get; set; } = new List<invoice_number_management>();
 
     public virtual ICollection<invoice_record> invoice_record { get; set; } = new List<invoice_record>();

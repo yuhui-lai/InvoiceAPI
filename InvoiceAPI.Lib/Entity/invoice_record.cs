@@ -29,8 +29,6 @@ public partial class invoice_record
 
     public string buyer_identifier { get; set; }
 
-    public string buyer_name { get; set; }
-
     public decimal sales_amount { get; set; }
 
     public decimal free_tax_sales_amount { get; set; }
@@ -56,8 +54,6 @@ public partial class invoice_record
     public DateTime create_date { get; set; }
 
     public DateTime update_date { get; set; }
-
-    public string carrier_type { get; set; }
 
     public int user_serial_map_id { get; set; }
 

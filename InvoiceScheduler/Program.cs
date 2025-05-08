@@ -1,9 +1,10 @@
-﻿using InvoiceAPI.Lib.Utils;
+﻿using InvoiceAPI.Lib.Entity;
+using InvoiceAPI.Lib.Services;
+using InvoiceAPI.Lib.Utils;
 using InvoiceScheduler;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-
-Console.WriteLine("Hello, World!");
 
 try
 {
@@ -12,8 +13,12 @@ try
     // 1. 建立依賴注入的容器
     var service = new ServiceCollection();
     // 2. 註冊服務
+    service.AddDbContext<WelldoneContext>(options =>
+        options.UseSqlServer(configuration.GetConnectionString("WelldoneConnection")));
+
     service.AddTransient<App>();
     service.AddSingleton(configuration);
+    service.AddScoped<InvoiceSchedulerService>();
 
     // 建立依賴服務提供者
     var serviceProvider = service.BuildServiceProvider();
@@ -25,4 +30,5 @@ catch (Exception ex)
 {
     Console.WriteLine("\n\n系統錯誤\n\n");
     Console.WriteLine(ex.Message);
+    Console.WriteLine(ex.StackTrace);
 }

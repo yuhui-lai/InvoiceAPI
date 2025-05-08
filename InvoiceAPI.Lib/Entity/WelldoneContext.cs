@@ -106,16 +106,9 @@ public partial class WelldoneContext : DbContext
                 .HasMaxLength(10)
                 .IsUnicode(false)
                 .HasDefaultValue("0000000000");
-            entity.Property(e => e.buyer_name)
-                .IsRequired()
-                .HasMaxLength(100);
             entity.Property(e => e.carrier_id_1)
                 .IsRequired()
                 .HasMaxLength(64);
-            entity.Property(e => e.carrier_type)
-                .IsRequired()
-                .HasMaxLength(10)
-                .IsUnicode(false);
             entity.Property(e => e.create_date).HasColumnType("datetime");
             entity.Property(e => e.donate_mark)
                 .IsRequired()
@@ -188,12 +181,24 @@ public partial class WelldoneContext : DbContext
             entity.HasIndex(e => e.system_code, "IX_invoice_system_code").IsUnique();
 
             entity.Property(e => e.id).ValueGeneratedNever();
-            entity.Property(e => e.seller_address).HasMaxLength(200);
+            entity.Property(e => e.carrier_type)
+                .IsRequired()
+                .HasMaxLength(6)
+                .IsUnicode(false)
+                .IsFixedLength();
+            entity.Property(e => e.seller_address)
+                .IsRequired()
+                .HasMaxLength(200);
             entity.Property(e => e.seller_identifier)
+                .IsRequired()
                 .HasMaxLength(8)
                 .IsUnicode(false);
-            entity.Property(e => e.seller_name).HasMaxLength(100);
-            entity.Property(e => e.seller_telephone_number).HasMaxLength(20);
+            entity.Property(e => e.seller_name)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.seller_telephone_number)
+                .IsRequired()
+                .HasMaxLength(20);
             entity.Property(e => e.system_code)
                 .IsRequired()
                 .HasMaxLength(10);
@@ -248,6 +253,9 @@ public partial class WelldoneContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.remark).HasMaxLength(1000);
+            entity.Property(e => e.session)
+                .HasMaxLength(36)
+                .IsUnicode(false);
             entity.Property(e => e.user_id).HasMaxLength(100);
         });
 

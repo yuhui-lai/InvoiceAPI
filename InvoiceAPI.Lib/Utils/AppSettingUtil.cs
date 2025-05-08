@@ -13,9 +13,6 @@ namespace InvoiceAPI.Lib.Utils
             if (_configuration != null)
                 return _configuration;
 
-            // 使用執行檔所在目錄作為基底路徑
-            var basePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-
             var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
 
             _configuration = new ConfigurationBuilder()

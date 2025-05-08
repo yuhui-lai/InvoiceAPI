@@ -15,6 +15,8 @@ public partial class welldone_common_log
 
     public string log_level { get; set; }
 
+    public string session { get; set; }
+
     public string user_id { get; set; }
 
     public string log_content { get; set; }
