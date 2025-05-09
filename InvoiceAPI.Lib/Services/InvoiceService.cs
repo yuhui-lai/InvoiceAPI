@@ -347,7 +347,7 @@ namespace InvoiceAPI.Lib.Services
                 order_no = req.order_no,
                 reason = string.Empty,
                 send_status = false,
-                operation_type_id = (int)InvoiceOperationTypeEnum.C0401,
+                operation_type_id = (int)InvoiceOperationTypeEnum.F0401,
                 create_date = TimeUtil.UnifiedNow(),
                 update_date = TimeUtil.UnifiedNow(),
                 user_serial_map_id = userMapId, // 需設定有效的 user_serial_map ID

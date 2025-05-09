@@ -20,7 +20,7 @@ namespace InvoiceScheduler
             Console.WriteLine($"Env: {config["Env"]}");
             Console.WriteLine($"Env: {config["Env"]}");
 
-            await invoiceSchedulerService.CreateC0401();
+            await invoiceSchedulerService.CreateF0401();
         }
     }
 }
